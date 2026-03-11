@@ -116,7 +116,8 @@ async def get_link(callback: CallbackQuery):
     link = referral_link(callback.from_user.id)
 
     await callback.message.answer(
-        f"Ваша реферальная ссылка:\n{link}"
+        "Ваша реферальная ссылка:\n" + link,
+        parse_mode=None
     )
 
 
