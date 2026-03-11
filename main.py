@@ -1,165 +1,179 @@
-from fastapi import FastAPI, Request
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import Update
-from config import *
-from keyboards import menu
-from database import *
-import pandas as pd
-from aiogram import Bot, Dispatcher
-from aiogram.client.default import DefaultBotProperties
 import asyncio
+import pandas as pd
 
-TELEGRAM_TOKEN = "8233660891:AAHuLsyErkasMdsYXuLJFD_D3ax2TsR6OFI"
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, CallbackQuery
+from aiogram.filters import CommandStart, Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.enums import ParseMode
 
-bot = Bot(
-    token=TELEGRAM_TOKEN,
-    default=DefaultBotProperties(parse_mode="Markdown")
-)
+from config import *
+from database import *
 
-app = FastAPI()
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN)
+dp = Dispatcher()
+
+WELCOME_TEXT = """
+Рады видеть вас, {name}!
+
+Если вам нравится наш канал [Your art muse](https://t.me/your_art_muse), не стесняйтесь рекомендовать его друзьям!
+
+*Пригласите 3-х своих друзей и получите в подарок наш супер-бонус!*
+
+База из 5 эфиров с разборами искусства 🔥
+Это более 9 часов анализа реальных работ художников.
+"""
+
+
+def main_keyboard():
+
+    kb = InlineKeyboardBuilder()
+
+    kb.button(
+        text="Получить ссылку",
+        callback_data="get_link"
+    )
+
+    kb.button(
+        text="Как получить ПРИЗ?",
+        callback_data="how"
+    )
+
+    kb.button(
+        text="Подписаться на канал",
+        url="https://t.me/your_art_muse"
+    )
+
+    kb.adjust(1)
+
+    return kb.as_markup()
+
+
+def referral_link(user_id):
+    return f"https://t.me/{BOT_USERNAME}?start={user_id}"
 
 
 async def check_subscription(user_id):
 
     try:
-        member = await bot.get_chat_member(CHANNEL, user_id)
-        return member.status != "left"
+        member = await bot.get_chat_member(CHANNEL_ID, user_id)
+
+        return member.status in ["member", "administrator", "creator"]
+
     except:
         return False
 
 
-@dp.message_handler(commands=["start"])
-async def start(message: types.Message):
+@dp.message(CommandStart())
+async def start(message: Message):
 
-    args = message.get_args()
+    args = message.text.split()
 
-    ref = None
-    if args:
-        ref = args
+    referrer = None
 
-    new = add_user(
+    if len(args) > 1:
+        referrer = int(args[1])
+
+    is_new = add_user(
         message.from_user.id,
-        "telegram",
         message.from_user.username,
         message.from_user.first_name,
-        ref
+        referrer
     )
 
-    if new and ref:
+    if is_new and referrer:
 
-        if await check_subscription(message.from_user.id):
+        count = get_referrals(referrer)
 
-            cursor.execute(
-                "UPDATE users SET referrals = referrals + 1 WHERE user_id=?",
-                (ref,)
-            )
+        await bot.send_message(
+            referrer,
+            f"🎉 У вас новый реферал!\nВсего: {count}/3"
+        )
 
-            conn.commit()
+        if count >= REFERRALS_REQUIRED:
 
-            cursor.execute(
-                "SELECT referrals FROM users WHERE user_id=?",
-                (ref,)
-            )
+            user = get_user(referrer)
 
-            count = cursor.fetchone()[0]
+            if not user[5]:
 
-            await bot.send_message(
-                ref,
-                f"🎉 Новый реферал!\n\n{count}/3"
-            )
+                mark_rewarded(referrer)
 
-            if count >= 3:
-
-                cursor.execute(
-                    "SELECT rewarded FROM users WHERE user_id=?",
-                    (ref,)
-                )
-
-                if cursor.fetchone()[0] == 0:
-
-                    await bot.send_message(
-                        ref,
-                        """
+                await bot.send_message(
+                    referrer,
+                    """
 Поздравляем!
 
-Вы победили в нашем конкурсе!
+Вы победили в нашем конкурсе и получаете наш супер-бонус!
 
-База эфиров:
+База из 5 эфиров разборов:
 https://www.youtube.com/playlist?list=PL2DjtAFoLP6w3ztMXg4eLzBPUj3iaFvPm
 
-Консультация:
+Бесплатная консультация:
 https://onstudy.org/konsultatsiya-art/
 """
-                    )
+                )
 
-                    cursor.execute(
-                        "UPDATE users SET rewarded=1 WHERE user_id=?",
-                        (ref,)
-                    )
+    text = WELCOME_TEXT.format(name=message.from_user.first_name)
 
-                    conn.commit()
+    await message.answer(text, reply_markup=main_keyboard())
 
-    text = f"""
-Рады видеть вас, {message.from_user.first_name}!
 
-Если вам нравится наш канал [Your art muse](https://t.me/your_art_muse), рекомендуйте его друзьям!
+@dp.callback_query(F.data == "get_link")
+async def link_handler(callback: CallbackQuery):
 
-Пригласите 3-х друзей и получите бонус 🔥
+    link = referral_link(callback.from_user.id)
+
+    await callback.message.answer(
+        f"Ваша реферальная ссылка:\n{link}"
+    )
+
+
+@dp.callback_query(F.data == "how")
+async def how_handler(callback: CallbackQuery):
+
+    text = """
+Что вам нужно сделать, чтобы получить эфиры:
+
+- подпишитесь на канал https://t.me/your_art_muse
+- нажмите кнопку «получить ссылку»
+- отправьте ссылку друзьям
+- пригласите 3-х друзей
+- получите доступ к базе эфиров
 """
 
-    await message.answer(text, reply_markup=menu())
+    await callback.message.answer(text)
 
 
-@dp.callback_query_handler(lambda c: c.data == "ref")
-async def ref(call: types.CallbackQuery):
+@dp.message(Command("export"))
+async def export_excel(message: Message):
 
-    username = (await bot.me).username
-
-    link = f"https://t.me/{username}?start={call.from_user.id}"
-
-    await call.message.answer(
-        f"Ваша реферальная ссылка:\n\n{link}"
-    )
-
-
-@dp.callback_query_handler(lambda c: c.data == "how")
-async def how(call: types.CallbackQuery):
-
-    await call.message.answer("""
-Что нужно сделать:
-
-1️⃣ Подписаться на канал  
-2️⃣ Получить ссылку  
-3️⃣ Пригласить 3 друзей  
-4️⃣ Получить эфиры
-""")
-
-
-@dp.message_handler(commands=["export"])
-async def export(message: types.Message):
-
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMIN_IDS:
         return
 
-    df = pd.read_sql_query(
-        "SELECT * FROM users",
-        conn
+    users = all_users()
+
+    df = pd.DataFrame(
+        users,
+        columns=[
+            "user_id",
+            "username",
+            "first_name",
+            "referrer",
+            "referrals",
+            "rewarded"
+        ]
     )
 
-    df.to_excel("users.xlsx")
+    file = "users.xlsx"
 
-    await message.answer_document(
-        open("users.xlsx","rb")
-    )
+    df.to_excel(file, index=False)
+
+    await message.answer_document(open(file, "rb"))
 
 
-@app.post("/telegram")
-async def telegram_webhook(req: Request):
+async def main():
+    await dp.start_polling(bot)
 
-    data = await req.json()
 
-    update = Update(**data)
-
-    await dp.process_update(update)
-
-    return {"ok": True}
+if __name__ == "__main__":
+    asyncio.run(main())
