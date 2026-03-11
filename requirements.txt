@@ -1,6 +1,6 @@
-aiogram==3.4.1
+aiogram
 fastapi
-uvicorn[standard]
+uvicorn
 pandas
 openpyxl
 requests
