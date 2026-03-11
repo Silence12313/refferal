@@ -5,9 +5,16 @@ from config import *
 from keyboards import menu
 from database import *
 import pandas as pd
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+import asyncio
 
-bot = Bot(token=TELEGRAM_TOKEN, parse_mode="Markdown")
-dp = Dispatcher(bot)
+TELEGRAM_TOKEN = "8233660891:AAHuLsyErkasMdsYXuLJFD_D3ax2TsR6OFI"
+
+bot = Bot(
+    token=TELEGRAM_TOKEN,
+    default=DefaultBotProperties(parse_mode="Markdown")
+)
 
 app = FastAPI()
 
