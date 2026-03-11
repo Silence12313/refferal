@@ -5,7 +5,7 @@ BOT_USERNAME = "Your_art_muse_new_bot"
 CHANNEL_ID = 1687144236
 CHANNEL_LINK = "https://t.me/your_art_muse"
 
-ADMIN_IDS = 5289442566
+ADMIN_IDS = [5289442566]
 
 REF_REQUIRED = 3
 
