@@ -4,13 +4,18 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.enums import ParseMode
-
+from aiogram.client.default import DefaultBotProperties
 from config import *
 from database import *
 from keyboards import main_keyboard
 
 
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.MARKDOWN)
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(
+        parse_mode=ParseMode.MARKDOWN
+    )
+)
 
 dp = Dispatcher()
 
