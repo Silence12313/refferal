@@ -139,9 +139,18 @@ async def how(callback: CallbackQuery):
 async def export_excel(message: Message):
 
     if message.from_user.id not in ADMIN_IDS:
+
+        await message.answer("Нет доступа")
+
         return
 
     users = get_all()
+
+    if not users:
+
+        await message.answer("База пользователей пустая")
+
+        return
 
     df = pd.DataFrame(
         users,
@@ -158,5 +167,7 @@ async def export_excel(message: Message):
     file = "users.xlsx"
 
     df.to_excel(file, index=False)
+
+    await message.answer_document(open(file, "rb"))
 
     await message.answer_document(open(file, "rb"))
