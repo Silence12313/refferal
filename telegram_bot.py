@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from config import BOT_TOKEN, CHANNEL_ID, CHANNEL_LINK, REF_REQUIRED
 from keyboards import main_keyboard
@@ -53,7 +54,10 @@ async def start(message: Message):
     )
 
     if ref:
-        add_referral(int(ref), message.from_user.id)
+        try:
+            add_referral(int(ref), message.from_user.id)
+        except:
+            pass
 
     text = f"""
 Рады видеть вас, {message.from_user.first_name}!
@@ -92,32 +96,41 @@ async def get_link(callback: CallbackQuery):
         count = count_referrals(owner)
 
         try:
-
             await bot.send_message(
                 owner,
                 f"🎉 Новый реферал!\nВсего: {count}/{REF_REQUIRED}"
             )
-
         except:
             pass
 
         if count >= REF_REQUIRED:
 
-            await bot.send_message(
-                owner,
-                """
+            try:
+                await bot.send_message(
+                    owner,
+                    """
 Поздравляем!
 
-Вы победили в конкурсе и получаете бонус!
+Вы пригласили нужное количество друзей и получаете бонус!
 
+База из 5 эфиров:
 https://www.youtube.com/playlist?list=PL2DjtAFoLP6w3ztMXg4eLzBPUj3iaFvPm
+
+Бесплатная консультация:
+https://onstudy.org/konsultatsiya-art/
 """
-            )
+                )
+            except:
+                pass
 
     link = referral_link(user_id)
 
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Открыть реферальную ссылку", url=link)
+
     await callback.message.answer(
-        f"Ваша реферальная ссылка:\n{link}"
+        f"Ваша реферальная ссылка:\n`{link}`",
+        reply_markup=kb.as_markup()
     )
 
 
@@ -127,11 +140,11 @@ async def how(callback: CallbackQuery):
     await callback.answer()
 
     text = f"""
-Что нужно сделать:
+Что нужно сделать, чтобы получить эфиры:
 
-1. Подпишитесь на канал
-2. Нажмите «получить ссылку»
-3. Отправьте её друзьям
+1. Подпишитесь на канал [Your art muse]({CHANNEL_LINK})
+2. Нажмите кнопку «получить ссылку»
+3. Отправьте ссылку друзьям
 4. Пригласите {REF_REQUIRED} друзей
 5. Получите бонус
 """
