@@ -90,8 +90,9 @@ async def start(message: Message):
 @dp.callback_query(F.data == "get_link")
 async def get_link(callback: CallbackQuery):
 
-    user_id = callback.from_user.id
+    await callback.answer()
 
+    user_id = callback.from_user.id
 
     if not await check_subscription(user_id):
 
@@ -100,7 +101,6 @@ async def get_link(callback: CallbackQuery):
         )
 
         return
-
 
     confirm_referral(user_id)
 
@@ -114,6 +114,13 @@ async def get_link(callback: CallbackQuery):
             ref_owner,
             f"🎉 У вас новый реферал!\nВсего: {count}/{REF_REQUIRED}"
         )
+
+    link = referral_link(user_id)
+
+    await callback.message.answer(
+        "Ваша реферальная ссылка:\n" + link,
+        parse_mode=None
+    )
 
 
         if count >= REF_REQUIRED:
