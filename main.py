@@ -1,26 +1,26 @@
 import asyncio
-
 from fastapi import FastAPI
 import uvicorn
 
 from telegram_bot import dp, bot
-from max_bot import router
 
 app = FastAPI()
 
-app.include_router(router)
+
+@app.get("/")
+async def root():
+    return {"status": "running"}
+
+
+async def start_bot():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
 
 
 @app.on_event("startup")
 async def startup():
-    await bot.delete_webhook(drop_pending_updates=True)
-    asyncio.create_task(
-        dp.start_polling(bot)
-    )
+    asyncio.create_task(start_bot())
 
 
 if __name__ == "__main__":
-
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080)
