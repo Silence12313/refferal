@@ -30,19 +30,20 @@ async def check_subscription(user_id):
     try:
 
         member = await bot.get_chat_member(
-            CHANNEL_ID,
-            user_id
+            chat_id=CHANNEL_ID,
+            user_id=user_id
         )
 
-        return member.status in [
-            "member",
-            "administrator",
-            "creator"
-        ]
+        if member.status in ["member", "administrator", "creator"]:
+            return True
 
-    except:
         return False
 
+    except Exception as e:
+
+        print("SUBSCRIPTION CHECK ERROR:", e)
+
+        return False
 
 @dp.message(CommandStart())
 async def start(message: Message):
