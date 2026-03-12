@@ -2,7 +2,7 @@ BOT_TOKEN = "8233660891:AAHuLsyErkasMdsYXuLJFD_D3ax2TsR6OFI"
 
 BOT_USERNAME = "Your_art_muse_new_bot"
 
-CHANNEL_ID = 1687144236
+CHANNEL_ID = -1687144236
 CHANNEL_LINK = "https://t.me/your_art_muse"
 
 ADMIN_IDS = [5289442566]
