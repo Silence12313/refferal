@@ -9,18 +9,21 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"status": "running"}
-
-
-async def start_bot():
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    return {"status": "bot running"}
 
 
 @app.on_event("startup")
 async def startup():
-    asyncio.create_task(start_bot())
+
+    await bot.delete_webhook(drop_pending_updates=True)
+
+    asyncio.create_task(dp.start_polling(bot))
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080)
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8080
+    )
