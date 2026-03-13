@@ -121,6 +121,9 @@ def get_all_users():
 
     return cursor.fetchall()
 
+import io
+from aiogram.types import BufferedInputFile
+
 
 def export_users():
 
@@ -131,7 +134,13 @@ def export_users():
     for u in users:
         text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]}\n"
 
-    file = io.BytesIO(text.encode())
-    file.name = "users.txt"
+    buffer = io.BytesIO()
+    buffer.write(text.encode("utf-8"))
+    buffer.seek(0)
+
+    file = BufferedInputFile(
+        buffer.read(),
+        filename="users.txt"
+    )
 
     return file
