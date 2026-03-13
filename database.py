@@ -125,21 +125,26 @@ import io
 from aiogram.types import BufferedInputFile
 
 
+import io
+from aiogram.types import BufferedInputFile
+
+
 def export_users():
 
     users = get_all_users()
 
     text = ""
 
-    for u in users:
-        text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]}\n"
+    if not users:
+        text = "No users in database"
+    else:
+        for u in users:
+            text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]}\n"
 
-    buffer = io.BytesIO()
-    buffer.write(text.encode("utf-8"))
-    buffer.seek(0)
+    buffer = io.BytesIO(text.encode("utf-8"))
 
     file = BufferedInputFile(
-        buffer.read(),
+        buffer.getvalue(),
         filename="users.txt"
     )
 
