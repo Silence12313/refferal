@@ -10,6 +10,8 @@ from database import (
     referral_link
 )
 
+from max_api import send_message_max
+
 router = APIRouter()
 
 
@@ -47,56 +49,34 @@ async def max_webhook(request: Request):
             except:
                 pass
 
-        return {
-            "text": f"""
+        await send_message_max(
+            user_id,
+            f"""
 Рады видеть вас, {first_name}!
 
 Подпишитесь на канал:
 {CHANNEL_LINK}
 
 Пригласите {REF_REQUIRED} друзей и получите бонус.
-
-Напишите:
-получить ссылку
 """
-        }
+        )
 
-    if text.lower() == "получить ссылку":
+    elif text.lower() == "получить ссылку":
 
         confirm_referral(user_id)
 
-        owner = referral_owner(user_id)
-
-        if owner:
-
-            count = count_referrals(owner)
-
-            if count >= REF_REQUIRED:
-
-                return {
-                    "text": """
-Поздравляем!
-
-Вы пригласили нужное количество друзей!
-
-База эфиров:
-https://www.youtube.com/playlist?list=PL2DjtAFoLP6w3ztMXg4eLzBPUj3iaFvPm
-
-Консультация:
-https://onstudy.org/konsultatsiya-art/
-"""
-                }
-
         link = referral_link(user_id)
 
-        return {
-            "text": f"Ваша реферальная ссылка:\n{link}"
-        }
+        await send_message_max(
+            user_id,
+            f"Ваша реферальная ссылка:\n{link}"
+        )
 
-    if text.lower() == "как получить приз":
+    elif text.lower() == "как получить приз":
 
-        return {
-            "text": f"""
+        await send_message_max(
+            user_id,
+            f"""
 Что нужно сделать:
 
 1 Подписаться на канал
@@ -104,12 +84,10 @@ https://onstudy.org/konsultatsiya-art/
 
 2 Написать: получить ссылку
 
-3 Отправить друзьям
+3 Отправить ссылку друзьям
 
-4 Пригласить {REF_REQUIRED}
-
-5 Получить бонус
+4 Пригласить {REF_REQUIRED} друзей
 """
-        }
+        )
 
-    return {"status": "ok"}
+    return {"ok": True}
