@@ -4,8 +4,8 @@ from fastapi.responses import RedirectResponse
 import uvicorn
 
 from telegram_bot import dp, bot
-from config import BOT_USERNAME
 from max_bot import router as max_router
+from config import BOT_USERNAME
 
 app = FastAPI()
 
@@ -20,15 +20,18 @@ async def root():
 @app.get("/ref/{user_id}")
 async def referral_redirect(user_id: int):
 
-    telegram_link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
+    link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
 
-    return RedirectResponse(telegram_link)
+    return RedirectResponse(link)
 
 
 @app.on_event("startup")
 async def startup():
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+    except:
+        pass
 
     asyncio.create_task(dp.start_polling(bot))
 
