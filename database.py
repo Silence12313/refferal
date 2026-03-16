@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 import io
 
-from config import BOT_USERNAME
+from config import BOT_USERNAME, APP_URL
 
 conn = sqlite3.connect(
     "bot.db",
@@ -13,6 +13,7 @@ conn = sqlite3.connect(
 cursor = conn.cursor()
 
 cursor.execute("PRAGMA journal_mode=WAL")
+cursor.execute("PRAGMA synchronous=NORMAL")
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users(
@@ -63,8 +64,22 @@ def add_user(user_id, username, first_name):
 
 def add_referral(referrer_id, invited_id):
 
+    if referrer_id == invited_id:
+        return False
+
     cursor.execute(
-        "INSERT OR IGNORE INTO referrals(referrer_id, invited_id, created_at) VALUES(?,?,?)",
+        "SELECT invited_id FROM referrals WHERE invited_id=?",
+        (invited_id,)
+    )
+
+    if cursor.fetchone():
+        return False
+
+    cursor.execute(
+        """
+        INSERT INTO referrals(referrer_id, invited_id, created_at)
+        VALUES(?,?,?)
+        """,
         (
             referrer_id,
             invited_id,
@@ -74,8 +89,23 @@ def add_referral(referrer_id, invited_id):
 
     conn.commit()
 
+    return True
+
 
 def confirm_referral(invited_id):
+
+    cursor.execute(
+        "SELECT confirmed FROM referrals WHERE invited_id=?",
+        (invited_id,)
+    )
+
+    row = cursor.fetchone()
+
+    if not row:
+        return False
+
+    if row[0] == 1:
+        return False
 
     cursor.execute(
         "UPDATE referrals SET confirmed=1 WHERE invited_id=?",
@@ -83,6 +113,8 @@ def confirm_referral(invited_id):
     )
 
     conn.commit()
+
+    return True
 
 
 def referral_owner(invited_id):
@@ -103,7 +135,11 @@ def referral_owner(invited_id):
 def count_referrals(referrer_id):
 
     cursor.execute(
-        "SELECT COUNT(*) FROM referrals WHERE referrer_id=? AND confirmed=1",
+        """
+        SELECT COUNT(*)
+        FROM referrals
+        WHERE referrer_id=? AND confirmed=1
+        """,
         (referrer_id,)
     )
 
@@ -112,7 +148,7 @@ def count_referrals(referrer_id):
 
 def referral_link(user_id):
 
-    return f"https://t.me/{BOT_USERNAME}?start={user_id}"
+    return f"{APP_URL}/ref/{user_id}"
 
 
 def get_all_users():
@@ -121,11 +157,7 @@ def get_all_users():
 
     return cursor.fetchall()
 
-import io
-from aiogram.types import BufferedInputFile
 
-
-import io
 from aiogram.types import BufferedInputFile
 
 
@@ -136,7 +168,7 @@ def export_users():
     text = ""
 
     if not users:
-        text = "No users in database"
+        text = "No users"
     else:
         for u in users:
             text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]}\n"
