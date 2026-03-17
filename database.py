@@ -168,10 +168,18 @@ def export_users():
     text = ""
 
     if not users:
-        text = "No users"
+        text = "No users in database"
     else:
+
+        text += "user_id | username | first_name | joined_at | referrals\n\n"
+
         for u in users:
-            text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]}\n"
+
+            user_id = u[0]
+
+            refs = count_referrals(user_id)
+
+            text += f"{u[0]} | {u[1]} | {u[2]} | {u[3]} | {refs}\n"
 
     buffer = io.BytesIO(text.encode("utf-8"))
 
@@ -181,3 +189,4 @@ def export_users():
     )
 
     return file
+
