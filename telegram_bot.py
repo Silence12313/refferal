@@ -152,9 +152,15 @@ async def how(callback: CallbackQuery):
     await callback.message.answer(text)
 
 
+from config import ADMIN_ID
+
 @dp.message(Command("export"))
 async def export(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
 
     file = export_users()
 
     await message.answer_document(file)
+
